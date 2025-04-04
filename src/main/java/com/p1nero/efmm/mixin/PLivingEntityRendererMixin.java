@@ -9,7 +9,6 @@ import net.minecraft.client.renderer.entity.layers.ElytraLayer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.world.entity.LivingEntity;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,28 +17,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import yesman.epicfight.api.client.model.AnimatedMesh;
 import yesman.epicfight.api.utils.math.MathUtils;
 import yesman.epicfight.api.utils.math.OpenMatrix4f;
-import yesman.epicfight.client.renderer.LayerRenderer;
 import yesman.epicfight.client.renderer.patched.entity.PatchedEntityRenderer;
 import yesman.epicfight.client.renderer.patched.entity.PatchedLivingEntityRenderer;
 import yesman.epicfight.client.renderer.patched.layer.PatchedElytraLayer;
 import yesman.epicfight.client.renderer.patched.layer.PatchedLayer;
 import yesman.epicfight.client.renderer.patched.layer.WearableItemLayer;
-import yesman.epicfight.mixin.MixinLivingEntityRenderer;
 import yesman.epicfight.world.capabilities.entitypatch.LivingEntityPatch;
 
 import java.util.List;
 import java.util.Map;
 
 @Mixin(value = PatchedLivingEntityRenderer.class, remap = false)
-public abstract class PLivingEntityRendererMixin<E extends LivingEntity, T extends LivingEntityPatch<E>, M extends EntityModel<E>, R extends LivingEntityRenderer<E, M>, AM extends AnimatedMesh> extends PatchedEntityRenderer<E, T, R, AM> implements LayerRenderer<E, T, M> {
+public abstract class PLivingEntityRendererMixin<E extends LivingEntity, T extends LivingEntityPatch<E>, M extends EntityModel<E>, R extends LivingEntityRenderer<E, M>, AM extends AnimatedMesh> extends PatchedEntityRenderer<E, T, R, AM> {
 
     @Shadow
-    @Final
-    protected Map<Class<?>, PatchedLayer<E, T, M, ? extends RenderLayer<E, M>>> patchedLayers;
+    protected Map<Class<?>, PatchedLayer<E, T, M, ? extends RenderLayer<E, M>, AM>> patchedLayers;
 
     @Shadow
-    @Final
-    protected List<PatchedLayer<E, T, M, ? extends RenderLayer<E, M>>> customLayers;
+    protected List<PatchedLayer<E, T, M, ? extends RenderLayer<E, M>, AM>> customLayers;
 
     @Inject(method = "renderLayer", at = @At("HEAD"), cancellable = true)
     private void efmm$renderLayer(LivingEntityRenderer<E, M> renderer, T entitypatch, E entity, OpenMatrix4f[] poses, MultiBufferSource buffer, PoseStack poseStack, int packedLight, float partialTicks, CallbackInfo ci) {
@@ -71,11 +66,11 @@ public abstract class PLivingEntityRendererMixin<E extends LivingEntity, T exten
             }
         }
 
-        for (PatchedLayer<E, T, M, ? extends RenderLayer<E, M>> patchedLayer : this.customLayers) {
+        for (PatchedLayer<E, T, M, ? extends RenderLayer<E, M>,AM> patchedLayer : this.customLayers) {
             if (patchedLayer instanceof WearableItemLayer<?, ?, ?, ?> && ClientModelManager.getConfigFor(entity).shouldHideWearable()) {
                 continue;
             }
-            if (patchedLayer instanceof PatchedElytraLayer<?, ?, ?> && ClientModelManager.getConfigFor(entity).shouldHideElytra()) {
+            if (patchedLayer instanceof PatchedElytraLayer<?, ?, ?,?> && ClientModelManager.getConfigFor(entity).shouldHideElytra()) {
                 continue;
             }
             patchedLayer.renderLayer(entity, entitypatch, null, poseStack, buffer, packedLight, poses, bob, f2, f7, partialTicks);

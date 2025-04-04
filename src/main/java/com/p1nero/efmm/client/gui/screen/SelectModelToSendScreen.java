@@ -1,5 +1,6 @@
 package com.p1nero.efmm.client.gui.screen;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import com.p1nero.efmm.client.gui.widget.TexturedModelPreviewer;
 import com.p1nero.efmm.efmodel.ClientModelManager;
@@ -7,10 +8,10 @@ import com.p1nero.efmm.efmodel.ServerModelManager;
 import com.p1nero.efmm.gameasstes.EFMMArmatures;
 import io.netty.util.internal.StringUtil;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.CommonComponents;
@@ -21,9 +22,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import top.yunmouren.tools.MessageScreen;
 import yesman.epicfight.api.client.model.AnimatedMesh;
 import yesman.epicfight.api.client.model.MeshProvider;
-import yesman.epicfight.client.gui.datapack.screen.MessageScreen;
 import yesman.epicfight.gameasset.Animations;
 import yesman.epicfight.gameasset.Armatures;
 
@@ -41,7 +42,7 @@ public class SelectModelToSendScreen extends Screen {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public SelectModelToSendScreen(SelectEFModelScreen parent, Consumer<String> selectCallback, Consumer<String> cancelCallback) {
-        super(Component.translatable("gui.efmm.select.models"));
+        super(Component.nullToEmpty("gui.efmm.select.models"));
         this.parent = parent;
         this.selectCallback = selectCallback;
         this.cancelCallback = cancelCallback;
@@ -61,7 +62,7 @@ public class SelectModelToSendScreen extends Screen {
         this.texturedModelPreviewer = new TexturedModelPreviewer(10, 20, 36, 60, null, null, null, null);
         this.modelList = new ModelList(Minecraft.getInstance(), this.width, this.height, 36, this.height - 16, 21);
         this.modelList.setRenderTopAndBottom(false);
-        this.searchBox = new EditBox(Minecraft.getInstance().font, this.width / 2, 12, this.width / 2 - 12, 16, Component.translatable("tip.efmm.select_ef_model.keyword"));
+        this.searchBox = new EditBox(Minecraft.getInstance().font, this.width / 2, 12, this.width / 2 - 12, 16, Component.nullToEmpty("tip.efmm.select_ef_model.keyword"));
         this.searchBox.setResponder(this.modelList::refreshModelList);
         ClientModelManager.loadNativeModels();
         this.modelList.refreshModelList(null);
@@ -70,13 +71,13 @@ public class SelectModelToSendScreen extends Screen {
 
         this.texturedModelPreviewer._setWidth(split - 10);
         this.texturedModelPreviewer._setHeight(this.height - 68);
-        this.texturedModelPreviewer.resize(null);
+        this.texturedModelPreviewer.resize();
 
         this.modelList.updateSize(this.width - split, this.height, 36, this.height - 32);
         this.modelList.setLeftPos(split);
 
         this.searchBox.setX(this.width / 2);
-        this.searchBox.setY(12);
+        this.searchBox.y = (12);
         this.searchBox.setWidth(this.width / 2 - 12);
         this.searchBox.setHeight(16);
 
@@ -84,14 +85,14 @@ public class SelectModelToSendScreen extends Screen {
         this.addRenderableWidget(this.texturedModelPreviewer);
         this.addRenderableWidget(this.modelList);
 
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_OK, (button) -> {
+        this.addRenderableWidget(new Button(this.width / 2 - 162, this.height - 28, 160, 21, CommonComponents.GUI_DONE, (button) -> {
             if (this.modelList.getSelected() == null) {
-                Minecraft.getInstance().setScreen(new MessageScreen<>("", I18n.get("tip.efmm.please_select"), this, (button$2) -> {
+                Minecraft.getInstance().setScreen(new MessageScreen("", I18n.get("tip.efmm.please_select"), this, (button$2) -> {
                     Minecraft.getInstance().setScreen(this);
                 }, 180, 60));
             } else {
                 ModelList.ModelEntry modelEntry = this.modelList.getSelected();
-                Minecraft.getInstance().setScreen(new MessageScreen<>("", I18n.get("tip.efmm.sure_to_send"), this, (okButton) -> {
+                Minecraft.getInstance().setScreen(new MessageScreen("", I18n.get("tip.efmm.sure_to_send"), this, (okButton) -> {
                     try {
                         this.selectCallback.accept(modelEntry.modelId);
                         this.onClose();
@@ -104,12 +105,12 @@ public class SelectModelToSendScreen extends Screen {
                 }, 180, 60));
             }
 
-        }).pos(this.width / 2 - 162, this.height - 28).size(160, 21).build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, (button) -> {
+        }));
+        this.addRenderableWidget(new Button(this.width / 2 + 2, this.height - 28, 160, 21, CommonComponents.GUI_CANCEL, (button) -> {
             this.cancelCallback.accept(StringUtils.EMPTY);
             this.onClose();
             Minecraft.getInstance().setScreen(parent);
-        }).pos(this.width / 2 + 2, this.height - 28).size(160, 21).build());
+        }));
     }
 
     @Override
@@ -131,18 +132,16 @@ public class SelectModelToSendScreen extends Screen {
     public void tick() {
         this.texturedModelPreviewer._tick();
     }
-
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(guiGraphics, mouseX, mouseY, partialTicks);
-        Component component = Component.translatable("tip.efmm.select_model_to_upload");
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+        Component component = Component.nullToEmpty("tip.efmm.select_model_to_upload");
         float scale = Math.min(100f / font.width(component), 21f / font.lineHeight);
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(scale, scale, 1.0f);
-        guiGraphics.drawString(font, component, 50, 15, 16777215, true);
-        guiGraphics.pose().popPose();
+        poseStack.pushPose();
+        poseStack.scale(scale, scale, 1.0f);
+        drawString(poseStack,font, component, 50, 15, 16777215);
+        poseStack.popPose();
     }
-
     @OnlyIn(Dist.CLIENT)
     class ModelList extends ObjectSelectionList<ModelList.ModelEntry> {
         
@@ -191,22 +190,21 @@ public class SelectModelToSendScreen extends Screen {
                 this.modelId = modelId;
                 this.mesh = mesh;
             }
-
             @Override
-            public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
-                guiGraphics.drawString(Minecraft.getInstance().font, this.modelId, left + 5, top + 5, 16777215, true);
+            public void render(PoseStack poseStack, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+                drawString(poseStack,Minecraft.getInstance().font, this.modelId, left + 5, top + 5, 16777215);
             }
 
             @Override
             public @NotNull Component getNarration() {
-                return Component.translatable("narrator.select");
+                return Component.nullToEmpty("narrator.select");
             }
 
             @Override
             public boolean mouseClicked(double mouseX, double mouseY, int button) {
                 if (button == 0) {
                     if (ModelList.this.getSelected() == this) {
-                        Minecraft.getInstance().setScreen(new MessageScreen<>("", I18n.get("tip.efmm.sure_to_send"), SelectModelToSendScreen.this, (okButton) -> {
+                        Minecraft.getInstance().setScreen(new MessageScreen("", I18n.get("tip.efmm.sure_to_send"), SelectModelToSendScreen.this, (okButton) -> {
                             try {
                                 SelectModelToSendScreen.this.selectCallback.accept(this.modelId);
                                 SelectModelToSendScreen.this.onClose();
@@ -227,6 +225,8 @@ public class SelectModelToSendScreen extends Screen {
                     return false;
                 }
             }
+
+
         }
     }
 }

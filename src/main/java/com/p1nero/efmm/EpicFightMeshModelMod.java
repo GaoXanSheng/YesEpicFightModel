@@ -54,7 +54,7 @@ public class EpicFightMeshModelMod {
                 LOGGER.error("Failed to create config path!", e);
             }
         });
-        event.enqueueWork(()-> ConfigManager.INGAME_CONFIG.useAnimationShader.set(true));
+//        event.enqueueWork(()-> ConfigManager.INGAME_CONFIG.useAnimationShader.set(true));
     }
 
     private void onModLoadCompat(final InterModEnqueueEvent event){

@@ -8,12 +8,13 @@ import com.p1nero.efmm.network.packet.RequestBindModelPacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
 import yesman.epicfight.api.client.model.AnimatedMesh;
 import yesman.epicfight.api.client.model.MeshProvider;
@@ -25,8 +26,8 @@ public class EFMMKeyMappings {
     public static final KeyMapping OPEN_SELECT_SCREEN = new KeyMapping("key.efmm.open_select_screen", KeyConflictContext.IN_GAME, KeyModifier.CONTROL, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_M, "key.categories.efmm");
 
     @SubscribeEvent
-    public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-        event.register(OPEN_SELECT_SCREEN);
+    public static void registerKeyMappings(FMLClientSetupEvent event) {
+        ClientRegistry.registerKeyBinding(OPEN_SELECT_SCREEN);
     }
 
     @Mod.EventBusSubscriber(value = Dist.CLIENT)

@@ -1,5 +1,6 @@
 package com.p1nero.efmm.client.gui.screen;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import com.p1nero.efmm.client.gui.widget.TexturedModelPreviewer;
 import com.p1nero.efmm.efmodel.ClientModelManager;
@@ -9,7 +10,6 @@ import com.p1nero.efmm.network.PacketRelay;
 import com.p1nero.efmm.network.packet.RequestResetModelPacket;
 import io.netty.util.internal.StringUtil;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -23,9 +23,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
+import top.yunmouren.tools.MessageScreen;
 import yesman.epicfight.api.client.model.AnimatedMesh;
 import yesman.epicfight.api.client.model.MeshProvider;
-import yesman.epicfight.client.gui.datapack.screen.MessageScreen;
 import yesman.epicfight.gameasset.Animations;
 import yesman.epicfight.gameasset.Armatures;
 
@@ -43,7 +43,7 @@ public class SelectEFModelScreen extends Screen {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public SelectEFModelScreen(BiConsumer<String, MeshProvider<AnimatedMesh>> selectCallback, BiConsumer<String, MeshProvider<AnimatedMesh>> cancelCallback) {
-        super(Component.translatable("gui.efmm.select.models"));
+        super(Component.nullToEmpty("gui.efmm.select.models"));
         this.selectCallback = selectCallback;
         this.cancelCallback = cancelCallback;
     }
@@ -62,7 +62,7 @@ public class SelectEFModelScreen extends Screen {
         this.texturedModelPreviewer = new TexturedModelPreviewer(10, 20, 36, 60, null, null, null, null);
         this.modelList = new ModelList(Minecraft.getInstance(), this.width, this.height, 36, this.height - 16, 21);
         this.modelList.setRenderTopAndBottom(false);
-        this.searchBox = new EditBox(Minecraft.getInstance().font, this.width / 2, 12, this.width / 2 - 12, 16, Component.literal("select_ef_model.keyword"));
+        this.searchBox = new EditBox(Minecraft.getInstance().font, this.width / 2, 12, this.width / 2 - 12, 16, Component.nullToEmpty("select_ef_model.keyword"));
         this.searchBox.setResponder(this.modelList::refreshModelList);
 
         this.modelList.refreshModelList(null);
@@ -71,27 +71,27 @@ public class SelectEFModelScreen extends Screen {
 
         this.texturedModelPreviewer._setWidth(split - 10);
         this.texturedModelPreviewer._setHeight(this.height - 68);
-        this.texturedModelPreviewer.resize(null);
+        this.texturedModelPreviewer.resize();
 
         this.modelList.updateSize(this.width - split, this.height, 36, this.height - 32);
         this.modelList.setLeftPos(split);
 
         this.searchBox.setX(this.width / 2);
-        this.searchBox.setY(12);
+        this.searchBox.y = (12);
         this.searchBox.setWidth(this.width / 2 - 12);
         this.searchBox.setHeight(16);
 
         this.addRenderableWidget(this.searchBox);
-        this.addRenderableWidget(Button.builder(Component.translatable("button.efmm.reset_model"), (button) -> {
+        this.addRenderableWidget(new Button(10,10,100,21,Component.nullToEmpty("button.efmm.reset_model"), (button) -> {
             if (Minecraft.getInstance().player != null && ClientModelManager.hasNewModel(Minecraft.getInstance().player)) {
                 PacketRelay.sendToServer(PacketHandler.MAIN_CHANNEL, new RequestResetModelPacket());
                 Minecraft.getInstance().setScreen(null);
             }
-        }).pos(10, 10).size(100, 21).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("button.efmm.upload_model"),
+        }));
+        this.addRenderableWidget(new Button(130,10,100,21,Component.nullToEmpty("button.efmm.upload_model"),
                 (button) -> {
-                    if(Minecraft.getInstance().isSingleplayer()){
-                        Minecraft.getInstance().setScreen(new MessageScreen<>("", I18n.get("tip.efmm.in_single_player"), this, (button$2) -> {
+                    if(Minecraft.getInstance().hasSingleplayerServer()){
+                        Minecraft.getInstance().setScreen(new MessageScreen("", I18n.get("tip.efmm.in_single_player"), this, (button$2) -> {
                             Minecraft.getInstance().setScreen(this);
                         }, 180, 60));
                     } else {
@@ -101,7 +101,7 @@ public class SelectEFModelScreen extends Screen {
                                         ClientModelManager.sendModelToServer(modelId);
                                     } catch (IOException e) {
                                         LOGGER.error("failed to send model!", e);
-                                        Minecraft.getInstance().setScreen(new MessageScreen<>(I18n.get("tip.efmm.failed_to_send_model_to_server"), e.getLocalizedMessage(), this, (button$2) -> {
+                                        Minecraft.getInstance().setScreen(new MessageScreen(I18n.get("tip.efmm.failed_to_send_model_to_server"), e.getLocalizedMessage(), this, (button$2) -> {
                                             Minecraft.getInstance().setScreen(this);
                                         }, 180, 60));
                                     }
@@ -111,13 +111,13 @@ public class SelectEFModelScreen extends Screen {
                     }
                 }
 
-        ).pos(130, 10).size(100, 21).build());
+        ));
         this.addRenderableWidget(this.texturedModelPreviewer);
         this.addRenderableWidget(this.modelList);
 
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_OK, (button) -> {
+        this.addRenderableWidget(new Button(this.width / 2 - 162,this.height - 28,160,21,CommonComponents.GUI_DONE, (button) -> {
             if (this.modelList.getSelected() == null) {
-                Minecraft.getInstance().setScreen(new MessageScreen<>("", I18n.get("tip.efmm.please_select"), this, (button$2) -> {
+                Minecraft.getInstance().setScreen(new MessageScreen("", I18n.get("tip.efmm.please_select"), this, (button$2) -> {
                     Minecraft.getInstance().setScreen(this);
                 }, 180, 60));
             } else {
@@ -129,11 +129,11 @@ public class SelectEFModelScreen extends Screen {
                 }
             }
 
-        }).pos(this.width / 2 - 162, this.height - 28).size(160, 21).build());
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, (button) -> {
+        }));
+        this.addRenderableWidget(new Button(this.width / 2 + 2,this.height - 28,160,21,CommonComponents.GUI_CANCEL, (button) -> {
             this.cancelCallback.accept(StringUtils.EMPTY, null);
             this.onClose();
-        }).pos(this.width / 2 + 2, this.height - 28).size(160, 21).build());
+        }));
     }
 
     @Override
@@ -204,15 +204,14 @@ public class SelectEFModelScreen extends Screen {
                 this.modelId = modelId;
                 this.mesh = mesh;
             }
-
             @Override
-            public void render(GuiGraphics guiGraphics, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
-                guiGraphics.drawString(Minecraft.getInstance().font, this.modelId, left + 5, top + 5, 16777215, true);
+            public void render(PoseStack poseStack,int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean isMouseOver, float partialTicks) {
+                drawString(poseStack,Minecraft.getInstance().font, this.modelId, left + 5, top + 5, 16777215);
             }
 
             @Override
             public @NotNull Component getNarration() {
-                return Component.translatable("narrator.select");
+                return Component.nullToEmpty("narrator.select");
             }
 
             @Override
@@ -236,6 +235,8 @@ public class SelectEFModelScreen extends Screen {
                     return false;
                 }
             }
+
+
         }
     }
 }

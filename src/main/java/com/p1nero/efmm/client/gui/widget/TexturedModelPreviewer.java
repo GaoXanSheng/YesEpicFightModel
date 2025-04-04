@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import com.mojang.math.Matrix4f;
 import com.p1nero.efmm.efmodel.ClientModelManager;
 import com.p1nero.efmm.gameasstes.EFMMArmatures;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
@@ -27,16 +27,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexSorting;
-import com.mojang.math.Axis;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -93,9 +89,9 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
     private final ModelRenderTarget modelRenderTarget;
     private final List<StaticAnimation> animationsToPlay = Lists.newArrayList();
     private final List<CustomTrailParticle> trailParticles = Lists.newArrayList();
-    private final CheckBox showColliderCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 60, 0, 10, null, null, true, Component.translatable("datapack_edit.model_player.collider"), null);
-    private final CheckBox showItemCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 40, 0, 10, null, null, true, Component.translatable("datapack_edit.model_player.item"), null);
-    private final CheckBox showTrailCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 40, 0, 10, null, null, true, Component.translatable("datapack_edit.model_player.trail"), null);
+    private final CheckBox showColliderCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 60, 0, 10, null, null, true, Component.nullToEmpty("datapack_edit.model_player.collider"), null);
+    private final CheckBox showItemCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 40, 0, 10, null, null, true, Component.nullToEmpty("datapack_edit.model_player.item"), null);
+    private final CheckBox showTrailCheckbox = new CheckBox(Minecraft.getInstance().font, 0, 40, 0, 10, null, null, true, Component.nullToEmpty("datapack_edit.model_player.trail"), null);
     private double zoom = -5.0D;
     private float xRot = 0.0F;
     private float yRot = 180.0F;
@@ -110,7 +106,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
     private Item item;
 
     public TexturedModelPreviewer(int x1, int x2, int y1, int y2, HorizontalSizing horizontal, VerticalSizing vertical, Armature armature, MeshProvider<AnimatedMesh> mesh) {
-        super(x1, y1, x2, y2, Component.literal(""));
+        super(x1, y1, x2, y2, Component.nullToEmpty(""));
 
         if (armature != null) {
             FakeEntityPatch patch = new FakeEntityPatch(armature);
@@ -127,7 +123,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
         this.mesh = mesh;
 
         this.modelRenderTarget = new ModelRenderTarget();
-        this.resize(Minecraft.getInstance().screen.getRectangle());
+        this.resize();
 
         this.modelRenderTarget.setClearColor(0.1552F, 0.1552F, 0.1552F, 1.0F);
         this.modelRenderTarget.clear(Minecraft.ON_OSX);
@@ -298,14 +294,13 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
         this.zoom = Mth.clamp(this.zoom + amount * 0.5D, -20.0D, -0.5D);
         return true;
     }
-
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
         Minecraft minecraft = Minecraft.getInstance();
         partialTicks = minecraft.getFrameTime();
         minecraft.getMainRenderTarget().unbindWrite();
 
-        ScreenRectangle screenrectangle = null;
+        Rect2i screenrectangle = null;
         boolean scissorApplied = !guiGraphics.scissorStack.stack.isEmpty();
 
         // If scissor test is enabled, remove it.
@@ -406,7 +401,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
             guiGraphics.enableScissor(screenrectangle.left(), screenrectangle.top(), screenrectangle.right(), screenrectangle.bottom());
         }
 
-        this.modelRenderTarget.blitToScreen(guiGraphics);
+        this.modelRenderTarget.blitToScreen(poseStack);
 
         if (this.animator != null) {
             // Visibility control widgets
@@ -418,7 +413,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
 
                 this.showTrailCheckbox._setX(right);
                 this.showTrailCheckbox._setY(top);
-                this.showTrailCheckbox._renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+                this.showTrailCheckbox._renderWidget(poseStack, mouseX, mouseY, partialTicks);
             }
 
             if (this.item != null) {
@@ -426,7 +421,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
 
                 this.showItemCheckbox._setX(right);
                 this.showItemCheckbox._setY(top);
-                this.showItemCheckbox._renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+                this.showItemCheckbox._renderWidget(poseStack, mouseX, mouseY, partialTicks);
             }
 
             if (this.collider != null) {
@@ -434,33 +429,23 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
 
                 this.showColliderCheckbox._setX(right);
                 this.showColliderCheckbox._setY(top);
-                this.showColliderCheckbox._renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+                this.showColliderCheckbox._renderWidget(poseStack, mouseX, mouseY, partialTicks);
             }
         }
     }
 
-    @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementInput) {
-        narrationElementInput.add(NarratedElementType.TITLE, this.createNarrationMessage());
-    }
-
-    @Override
-    public void resize(ScreenRectangle screenRectangle) {
-//        if (this.getHorizontalSizingOption() != null) {
-//            this.getHorizontalSizingOption().resizeFunction.resize(this, screenRectangle, this.getX1(), this.getX2());
-//        }
-//
-//        if (this.getVerticalSizingOption() != null) {
-//            this.getVerticalSizingOption().resizeFunction.resize(this, screenRectangle, this.getY1(), this.getY2());
-//        }
-
+    public void resize() {
         double guiScale = Minecraft.getInstance().getWindow().getGuiScale();
-
         this.modelRenderTarget.resize(this._getWidth() * (int)guiScale, this._getHeight() * (int)guiScale, true);
     }
 
     public void onDestroy() {
         this.modelRenderTarget.destroyBuffers();
+    }
+
+    @Override
+    public void updateNarration(NarrationElementOutput narrationElementInput) {
+        narrationElementInput.add(NarratedElementType.TITLE, this.createNarrationMessage());
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -835,7 +820,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
             this.resize(window.getWidth(), window.getHeight(), false);
         }
 
-        private void blitToScreen(GuiGraphics guiGraphics) {
+        private void blitToScreen(PoseStack guiGraphics) {
             RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
             RenderSystem.setShaderTexture(0, this.colorTextureId);
 
@@ -847,9 +832,9 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
             float u = (float) this.viewWidth / (float) this.width;
             float v = (float) this.viewHeight / (float) this.height;
 
-            guiGraphics.pose().pushPose();
+            guiGraphics.pushPose();
 
-            Matrix4f matrix4f = guiGraphics.pose().last().pose();
+            Matrix4f matrix4f = guiGraphics.last().pose();
 
             Tesselator tesselator = Tesselator.getInstance();
             BufferBuilder bufferbuilder = tesselator.getBuilder();
@@ -858,9 +843,8 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
             bufferbuilder.vertex(matrix4f, right, bottom, 0.0F).uv(u, 0.0F).color(255, 255, 255, 255).endVertex();
             bufferbuilder.vertex(matrix4f, right, top, 0.0F).uv(u, v).color(255, 255, 255, 255).endVertex();
             bufferbuilder.vertex(matrix4f, left, top, 0.0F).uv(0.0F, v).color(255, 255, 255, 255).endVertex();
-            BufferUploader.drawWithShader(bufferbuilder.end());
-
-            guiGraphics.pose().popPose();
+            BufferUploader.end(bufferbuilder);
+            guiGraphics.popPose();
         }
     }
 
@@ -1109,12 +1093,12 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
 
     @Override
     public int _getX() {
-        return this.getX();
+        return this.x;
     }
 
     @Override
     public int _getY() {
-        return this.getY();
+        return this.y;
     }
 
     @Override
@@ -1129,12 +1113,12 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
 
     @Override
     public void _setX(int x) {
-        this.setX(x);
+        this.x = (x);
     }
 
     @Override
     public void _setY(int y) {
-        this.setY(y);
+        this.y = (y);
     }
 
     @Override
@@ -1152,8 +1136,7 @@ public class TexturedModelPreviewer extends AbstractWidget implements ResizableC
         return this.getMessage();
     }
 
-    @Override
-    public void _renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        this.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
+    public void _render(PoseStack guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        this.render(guiGraphics, mouseX, mouseY, partialTicks);
     }
 }
